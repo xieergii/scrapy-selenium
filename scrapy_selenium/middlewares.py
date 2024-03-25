@@ -9,7 +9,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from .http import SeleniumRequest
 
-
 class SeleniumMiddleware:
     """Scrapy middleware handling the requests using selenium"""
 
@@ -64,6 +63,17 @@ class SeleniumMiddleware:
             capabilities = driver_options.to_capabilities()
             self.driver = webdriver.Remote(command_executor=command_executor,
                                            desired_capabilities=capabilities)
+        # webdriver-manager
+        else:
+            # selenium4+ & webdriver-manager
+            from selenium import webdriver
+            from webdriver_manager.chrome import ChromeDriverManager
+            from selenium.webdriver.chrome.service import Service as ChromeService
+            if driver_name and driver_name.lower() == 'chrome':
+                # options = webdriver.ChromeOptions()
+                # options.add_argument(o)
+                self.driver = webdriver.Chrome(options=driver_options,
+                                               service=ChromeService(ChromeDriverManager().install()))
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -78,7 +88,8 @@ class SeleniumMiddleware:
         if driver_name is None:
             raise NotConfigured('SELENIUM_DRIVER_NAME must be set')
 
-        if driver_executable_path is None and command_executor is None:
+        # let's use webdriver-manager when nothing specified instead | RN just for Chrome
+        if (driver_name.lower() != 'chrome') and (driver_executable_path is None and command_executor is None):
             raise NotConfigured('Either SELENIUM_DRIVER_EXECUTABLE_PATH '
                                 'or SELENIUM_COMMAND_EXECUTOR must be set')
 
@@ -137,4 +148,3 @@ class SeleniumMiddleware:
         """Shutdown the driver when spider is closed"""
 
         self.driver.quit()
-
